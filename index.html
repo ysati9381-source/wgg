@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>🏫 Школьный сайт — Расписание 5–11</title>
+<style>
+:root{
+  --bg:#f3f4f6;
+  --card:#fff;
+  --text:#111;
+  --accent:#2563eb;
+}
+body.dark{
+  --bg:#0f172a;
+  --card:#1e293b;
+  --text:#f8fafc;
+  --accent:#38bdf8;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Arial, sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  transition:.25s;
+}
+header{
+  background:var(--card);
+  padding:12px 18px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  box-shadow:0 4px 10px rgba(0,0,0,0.08);
+  position:sticky;
+  top:0;
+  z-index:20;
+}
+.header-left{display:flex;align-items:center;gap:12px}
+.logo{font-weight:700}
+nav{display:flex;gap:8px;align-items:center}
+nav button{
+  border:0;padding:8px 12px;border-radius:8px;background:var(--accent);color:#fff;cursor:pointer;
+}
+nav button:hover{opacity:.9}
+.container{max-width:1100px;margin:18px auto;padding:0 16px}
+.card{background:var(--card);border-radius:14px;padding:18px;margin-bottom:18px;box-shadow:0 8px 20px rgba(0,0,0,0.06)}
+.hidden{display:none}
+.controls{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+select,input{padding:8px;border-radius:8px;border:1px solid #cfcfcf;background:transparent}
+table{width:100%;border-collapse:collapse;margin-top:8px}
+th,td{padding:10px;border-bottom:1px solid rgba(0,0,0,0.06);text-align:center}
+th{background:rgba(0,0,0,0.03)}
+input.lesson{width:100%;padding:6px;border-radius:8px;border:1px solid #ddd;text-align:center}
+.row-actions{display:flex;gap:8px;justify-content:center}
+.small{font-size:13px;padding:6px 8px}
+.footer-note{font-size:13px;color:rgba(0,0,0,0.6);margin-top:8px}
+@media (max-width:640px){
+  th,td{font-size:14px;padding:8px}
+  nav{gap:6px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <div class="logo">🏫 Школьный сайт</div>
+    <div style="font-size:13px;color:gray">Расписание 5–11</div>
+  </div>
+
+  <nav>
+    <button onclick="showPage('home')">Главная</button>
+    <button onclick="showPage('schedule')">Расписание</button>
+    <button onclick="showPage('bells')">Звонки</button>
+    <button id="themeBtn" onclick="toggleTheme()">🌞</button>
+  </nav>
+</header>
+
+<div class="container">
+
+  <!-- HOME -->
+  <div id="home" class="card">
+    <h1>данная рассылка является облачным сайтом</h1>
+    <h2>Добро пожаловать</h2>
+    <p>Это первый тестовый вариант школьного сайта <strong>«Расписание»</strong> можно выбрать класс и день, редактировать уроки — изменения сохраняются в браузере.</p>
+    <p class="footer-note">Расписание можно менять сразу на сайте </p>
+  </div>
+
+  <!-- SCHEDULE -->
+  <div id="schedule" class="card hidden">
+    <h2>Расписание уроков (5–11 классы)</h2>
+
+    <div class="controls">
+      <select id="classSelect" onchange="onClassOrDayChange()"></select>
+      <select id="daySelect" onchange="onClassOrDayChange()">
+        <option value="mon">Понедельник</option>
+        <option value="tue">Вторник</option>
+        <option value="wed">Среда</option>
+        <option value="thu">Четверг</option>
+        <option value="fri">Пятница</option>
+      </select>
+
+      <button class="small" onclick="resetToDefault()">Сбросить расписание</button>
+      <button class="small" onclick="exportSchedule()">Экспорт </button>
+      <button class="small" onclick="importPrompt()">Импорт </button>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>№</th>
+          <th>Время</th>
+          <th>Предмет (редактируется)</th>
+          <th>Перемена</th>
+        </tr>
+      </thead>
+      <tbody id="scheduleBody"></tbody>
+    </table>
+  </div>
+
+  <!-- BELLS -->
+  <div id="bells" class="card hidden">
+    <h2>Расписание звонков</h2>
+    <ul>
+      <li>1 урок — 09:00–09:45 (перемена 5 мин)</li>
+      <li>2 урок — 09:50–10:35 (перемена 15 мин)</li>
+      <li>3 урок — 10:50–11:35 (перемена 5 мин)</li>
+      <li>4 урок — 11:40–12:25 (перемена 15 мин)</li>
+      <li>5 урок — 12:40–13:25 (перемена 5 мин)</li>
+      <li>6 урок — 13:30–14:15 (перемена 5 мин)</li>
+      <li>7 урок — 14:20–15:05 (перемена 5 мин)</li>
+    </ul>
+  </div>
+
+</div>
+
+<script>
+/* ---------- Конфигурация времени уроков ---------- */
+const lessonTimes = [
+  {time:"09:00–09:45", break:"5 мин"},
+  {time:"09:50–10:35", break:"15 мин"},
+  {time:"10:50–11:35", break:"5 мин"},
+  {time:"11:40–12:25", break:"15 мин"},
+  {time:"12:40–13:25", break:"5 мин"},
+  {time:"13:30–14:15", break:"5 мин"},
+  {time:"14:20–15:05", break:"5 мин"}
+];
+
+const classes = [
+  "5Ә","5А","5Б",
+  "6Ә","6А","6Б",
+  "7Ә","7А","7Б",
+  "8А","8Б",
+  "9А","9Б",
+  "10А","11А"
+];
+const days = ["mon","tue","wed","thu","fri"];
+
+/* ---------- Построим defaultSchedule через addDefault (используя данные, что ты прислал для 5 и 6 классов) ---------- */
+const defaultSchedule = {};
+
+function addDefault(cls, day, lessons){
+  if(!defaultSchedule[cls]) defaultSchedule[cls] = {mon:[],tue:[],wed:[],thu:[],fri:[]};
+  defaultSchedule[cls][day] = lessons.slice(); // clone
+}
+
+/* ========= 5Ә ========= */
+addDefault("5Ә","mon",["Урок1","Урок2","Урок3","Урок4","Урок5","Урок6","Урок7"]);
+addDefault("5Ә","tue",["Урок1","Урок2","Урок3","Урок4","Урок5","Урок6","Урок7"]);
+addDefault("5Ә","wed",["Урок1","Урок2","Урок3","Урок4","Урок5","Урок6","Урок7"]);
+addDefault("5Ә","thu",["Урок1","Урок2","Урок3","Урок4","Урок5","Урок6","Урок7"]);
+addDefault("5Ә","fri",["Урок1","Урок2","Урок3","Урок4","Урок5","Урок6","Урок7"]);
+
+/* ========= 5А ========= */
+addDefault("5А","mon",["Урок1","Урок2","Урок3","Урок4","Урок5","Урок6","Урок7"]);
+addDefault("5А","tue",["Урок1","Урок2","Урок3","Урок4","Урок5","Урок6","Урок7"]);
+addDefault("5А","wed",["Урок1","Урок2","Урок3","Урок4","Урок5","Урок6","Урок7"]);
+addDefault("5А","thu",["Урок1","Урок2","Урок3","Урок4","Урок5","Урок6","Урок7"]);
+addDefault("5А","fri",["Урок1","Урок2","Урок3","Урок4","Урок5","Урок6","Урок7"]);
+
+/* ========= 5Б ========= */
+addDefault("5Б","mon",["Урок1","Урок2","Урок3","Урок4","Урок5","Урок6","Урок7"]);
+addDefault("5Б","tue",["Урок1","Урок2","Урок3","Урок4","Урок5","Урок6","Урок7"]);
+addDefault("5Б","wed",["Урок1","Урок2","Урок3","Урок4","Урок5","Урок6","Урок7"]);
+addDefault("5Б","thu",["Урок1","Урок2","Урок3","Урок4","Урок5","Урок6","Урок7"]);
+addDefault("5Б","fri",["Урок1","Урок2","Урок3","Урок4","Урок5","Урок6","Урок7"]);
+
+/* ========= 6Ә ========= */
+addDefault("6Ә","mon",["Урок1","Урок2","Урок3","Урок4","Урок5","Урок6","Урок7"]);
+addDefault("6Ә","tue",["Урок1","Урок2","Урок3","Урок4","Урок5","Урок6","Урок7"]);
+addDefault("6Ә","wed",["Урок1","Урок2","Урок3","Урок4","Урок5","Урок6","Урок7"]);
+addDefault("6Ә","thu",["Урок1","Урок2","Урок3","Урок4","Урок5","Урок6","Урок7"]);
+addDefault("6Ә","fri",["Урок1","Урок2","Урок3","Урок4","Урок5","Урок6","Урок7"]);
+
+/* ========= 6А ========= */
+addDefault("6А","mon",["Урок1","Урок2","Урок3","Урок4","Урок5","Урок6","Урок7"]);
+addDefault("6А","tue",["Урок1","Урок2","Урок3","Урок4","Урок5","Урок6","Урок7"]);
+addDefault("6А","wed",["Урок1","Урок2","Урок3","Урок4","Урок5","Урок6","Урок7"]);
+addDefault("6А","thu",["Урок1","Урок2","Урок3","Урок4","Урок5","Урок6","Урок7"]);
+addDefault("6А","fri",["Урок1","Урок2","Урок3","Урок4","Урок5","Урок6","Урок7"]);
+
+/* ========= 6Б ========= */
+addDefault("6Б","mon",["Урок1","Урок2","Урок3","Урок4","Урок5","Урок6","Урок7"]);
+addDefault("6Б","tue",["Урок1","Урок2","Урок3","Урок4","Урок5","Урок6","Урок7"]);
+addDefault("6Б","wed",["Урок1","Урок2","Урок3","Урок4","Урок5","Урок6","Урок7"]);
+addDefault("6Б","thu",["Урок1","Урок2","Урок3","Урок4","Урок5","Урок6","Урок7"]);
+addDefault("6Б","fri",["Урок1","Урок2","Урок3","Урок4","Урок5","Урок6","Урок7"]);
+/* ========= 7–11 (шаблон: Урок1..Урок7 для всех дней) ========= */
+["7Ә","7А","7Б","8А","8Б","9А","9Б","10А","11А"].forEach(c=>{
+  days.forEach(d=>{
+    addDefault(c,d,["Урок1","Урок2","Урок3","Урок4","Урок5","Урок6","Урок7"]);
+  });
+});
+
+/* ---------- scheduleData: либо из localStorage, либо defaultSchedule ---------- */
+let scheduleData = null;
+const STORAGE_KEY = "school_schedule_v1";
+
+function loadSchedule(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      const parsed = JSON.parse(raw);
+      // простая валидация — есть ли ключи классов
+      let ok = true;
+      for(const c of classes){
+        if(!parsed[c]) { ok = false; break; }
+        for(const d of days){
+          if(!Array.isArray(parsed[c][d]) || parsed[c][d].length !== 7){ ok=false; break; }
+        }
+        if(!ok) break;
+      }
+      if(ok){
+        scheduleData = parsed;
+        return;
+      }
+    }
+  }catch(e){
+    console.error("load error", e);
+  }
+  // если не загрузили — копируем defaultSchedule
+  scheduleData = {};
+  for(const c of Object.keys(defaultSchedule)){
+    scheduleData[c] = {};
+    for(const d of days){
+      scheduleData[c][d] = defaultSchedule[c][d].slice();
+    }
+  }
+  saveSchedule();
+}
+
+function saveSchedule(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(scheduleData));
+  }catch(e){
+    console.error("save error", e);
+  }
+}
+
+/* ---------- UI: класс и день ---------- */
+const classSelect = document.getElementById("classSelect");
+const daySelect = document.getElementById("daySelect");
+const scheduleBody = document.getElementById("scheduleBody");
+
+function populateClassSelect(){
+  classSelect.innerHTML = "";
+  classes.forEach(c=>{
+    const opt = document.createElement("option");
+    opt.value = c;
+    opt.textContent = c;
+    classSelect.appendChild(opt);
+  });
+}
+
+function renderSchedule(){
+  const cls = classSelect.value;
+  const day = daySelect.value;
+  scheduleBody.innerHTML = "";
+  const lessons = scheduleData[cls][day];
+  lessons.forEach((lesson,i)=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${i+1}</td>
+      <td>${lessonTimes[i].time}</td>
+      <td><input class="lesson" value="${escapeHtml(lesson)}" oninput="onLessonInput('${cls}','${day}',${i},this.value)"></td>
+      <td>${lessonTimes[i].break}</td>
+    `;
+    scheduleBody.appendChild(tr);
+  });
+}
+
+/* ---------- handlers ---------- */
+function onLessonInput(cls, day, index, value){
+  scheduleData[cls][day][index] = value;
+  saveSchedule();
+}
+
+function onClassOrDayChange(){
+  renderSchedule();
+}
+
+/* ---------- theme ---------- */
+const THEME_KEY = "school_theme_v1";
+const themeBtn = document.getElementById("themeBtn");
+function applyStoredTheme(){
+  const t = localStorage.getItem(THEME_KEY) || "light";
+  if(t === "dark") document.body.classList.add("dark"), themeBtn.textContent="🌙";
+  else document.body.classList.remove("dark"), themeBtn.textContent="🌞";
+}
+function toggleTheme(){
+  document.body.classList.toggle("dark");
+  const isDark = document.body.classList.contains("dark");
+  localStorage.setItem(THEME_KEY, isDark ? "dark" : "light");
+  themeBtn.textContent = isDark ? "🌙" : "🌞";
+}
+
+/* ---------- reset, export, import ---------- */
+function resetToDefault(){
+  if(!confirm("Сбросить расписание к значениям по умолчанию? Все ваши изменения будут потеряны.")) return;
+  // overwrite scheduleData with defaultSchedule
+  for(const c of Object.keys(defaultSchedule)){
+    for(const d of days){
+      scheduleData[c][d] = defaultSchedule[c][d].slice();
+    }
+  }
+  saveSchedule();
+  renderSchedule();
+  alert("Расписание сброшено.");
+}
+
+function exportSchedule(){
+  const dataStr = JSON.stringify(scheduleData, null, 2);
+  // предложим скопировать в буфер обмена
+  try{
+    navigator.clipboard.writeText(dataStr).then(()=>{
+      alert("JSON экспорт копирован в буфер обмена.");
+    },()=>{
+      // fallback: показать в новом окне
+      const w = window.open("", "_blank");
+      w.document.body.textContent = dataStr;
+    });
+  }catch(e){
+    const w = window.open("", "_blank");
+    w.document.body.textContent = dataStr;
+  }
+}
+
+function importPrompt(){
+  const txt = prompt("Вставьте JSON расписания (перезапишет текущее):");
+  if(!txt) return;
+  try{
+    const obj = JSON.parse(txt);
+    // быстрая валидация
+    for(const c of classes){
+      if(!obj[c]) throw new Error("Отсутствует класс: "+c);
+      for(const d of days){
+        if(!Array.isArray(obj[c][d]) || obj[c][d].length !== 7) throw new Error("Неправильный формат для " + c + " " + d);
+      }
+    }
+    scheduleData = obj;
+    saveSchedule();
+    renderSchedule();
+    alert("Импорт успешен.");
+  }catch(e){
+    alert("Ошибка импорта: " + e.message);
+  }
+}
+
+/* ---------- misc ---------- */
+function showPage(id){
+  document.querySelectorAll('.card').forEach(el=>el.classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+  // при переходе на расписание обновим отображение
+  if(id === 'schedule') renderSchedule();
+}
+
+function escapeHtml(str){
+  if(str == null) return "";
+  return String(str).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+/* ---------- стартовая инициализация ---------- */
+(function init(){
+  populateClassSelect();
+  loadSchedule();
+  applyStoredTheme();
+
+  // выберем последний сохранённый класс/день из localStorage если есть
+  const lastClass = localStorage.getItem("school_last_class");
+  const lastDay = localStorage.getItem("school_last_day");
+  if(lastClass && classes.includes(lastClass)) classSelect.value = lastClass;
+  if(lastDay && ["mon","tue","wed","thu","fri"].includes(lastDay)) daySelect.value = lastDay;
+
+  // обновляем выбор пользователя в storage при смене
+  classSelect.addEventListener('change', ()=> {
+    localStorage.setItem("school_last_class", classSelect.value);
+  });
+  daySelect.addEventListener('change', ()=> {
+    localStorage.setItem("school_last_day", daySelect.value);
+  });
+
+  renderSchedule();
+  showPage('home');
+})();
+</script>
+
+</body>
+</html>
